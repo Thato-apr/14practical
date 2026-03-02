@@ -1,0 +1,98 @@
+import java.util.*;
+
+public class Main {
+
+    public static void main(String[] args) {
+
+        int N = 1 << 20;  // 2^20 = 1,048,576
+        int[] keys = new int[N];
+
+        for (int i = 0; i < N; i++) {
+            keys[i] = i + 1;
+        }
+
+        shuffle(keys);
+
+        String[] values = new String[N];
+
+        for (int i = 0; i < N; i++) {
+            values[i] = String.valueOf(i + 1);
+        }
+
+        double[] loadFactors = {0.75, 0.80, 0.85, 0.90, 0.95};
+
+        System.out.println("Load    OpenHash(sec)    ChainedHash(sec)");
+
+        for (double alpha : loadFactors) {
+
+            int used = (int)(alpha * 1_000_000);
+            int m = (int)(used / alpha);
+
+            double openTime = timeOpen(keys, values, used, m);
+            double chainTime = timeChained(keys, values, used, m);
+
+            System.out.printf("%.0f%%     %.4f           %.4f\n",
+                    alpha*100, openTime, chainTime);
+        }
+    }
+
+    static void shuffle(int[] arr) {
+        Random rand = new Random();
+        for (int i = arr.length - 1; i > 0; i--) {
+            int j = rand.nextInt(i + 1);
+            int temp = arr[i];
+            arr[i] = arr[j];
+            arr[j] = temp;
+        }
+    }
+
+    static double timeOpen(int[] keys, String[] values, int used, int m) {
+
+        double total = 0;
+
+        for (int r = 0; r < 30; r++) {
+
+            openHash h = new openHash(m);
+
+            for (int i = 0; i < used; i++) {
+                h.insert(String.valueOf(keys[i]), values[i]);
+            }
+
+            long start = System.currentTimeMillis();
+
+            for (int i = 0; i < used; i++) {
+                h.lookup(String.valueOf(keys[i]));
+            }
+
+            long end = System.currentTimeMillis();
+            total += (end - start);
+        }
+
+        return (total / 30.0) / 1000.0;
+    }
+
+    static double timeChained(int[] keys, String[] values, int used, int m) {
+
+        double total = 0;
+
+        for (int r = 0; r < 30; r++) {
+
+            chainedHash h = new chainedHash(m);
+
+            for (int i = 0; i < used; i++) {
+                h.insert(String.valueOf(keys[i]), values[i]);
+            }
+
+            long start = System.currentTimeMillis();
+
+            for (int i = 0; i < used; i++) {
+                h.lookup(String.valueOf(keys[i]));
+            }
+
+            long end = System.currentTimeMillis();
+            total += (end - start);
+        }
+
+        return (total / 30.0) / 1000.0;
+    }
+}
